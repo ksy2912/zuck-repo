@@ -11,11 +11,14 @@
   },
   "dependencies": {
     "@tanstack/react-virtual": "^3.14.3",
+    "fuse.js": "^7.4.2",
     "lucide-react": "^1.20.0",
     "papaparse": "^5.5.3",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "xlsx": "^0.18.5"
+    "react-router-dom": "^7.18.0",
+    "xlsx": "^0.18.5",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -1,16 +1,22 @@
 import { useCallback, useState } from 'react';
-import { AlertCircle, RotateCcw, Zap, Shield, Eye, Layers } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { AlertCircle, RotateCcw, Zap, Shield, Eye, Layers, ArrowRight } from 'lucide-react';
 import { PageHeader } from '../components/layout/PageHeader';
+import { StepNav } from '../components/layout/StepNav';
 import { DropZone } from '../components/upload/DropZone';
 import { FileMetaCard } from '../components/upload/FileMetaCard';
 import { ColumnInspector } from '../components/upload/ColumnInspector';
 import { VirtualPreview } from '../components/upload/VirtualPreview';
+import { MultiFileManifestCard } from '../components/upload/MultiFileManifestCard';
+import { useAppContext } from '../context/AppContext';
 import { parseCSVStream } from '../lib/parsers/csvParser';
 import { parseExcel } from '../lib/parsers/excelParser';
 import { parseJSON } from '../lib/parsers/jsonParser';
+import { processMultiFileUpload, getSuggestedPairing } from '../lib/merge/processMultiFileUpload';
 import { detectFormat } from '../lib/parsers/detectFormat';
 import { inferColumnTypes } from '../lib/inferTypes';
 import type { ParsedDataset } from '../types/dataset';
+import type { FileManifestEntry, CompletenessReport } from '../types/fragments';
 
 function getExtension(fileName: string): string {
   const dot = fileName.lastIndexOf('.');
@@ -45,17 +51,27 @@ const FEATURES = [
 ];
 
 export function Day1Upload() {
+  const navigate = useNavigate();
+  const { setDataset, setRawBraidJson } = useAppContext();
   const [isParsing, setIsParsing] = useState(false);
   const [streamedRows, setStreamedRows] = useState(0);
-  const [dataset, setDataset] = useState<ParsedDataset | null>(null);
+  const [dataset, setLocalDataset] = useState<ParsedDataset | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [manifest, setManifest] = useState<FileManifestEntry[] | null>(null);
+  const [completeness, setCompleteness] = useState<CompletenessReport | null>(null);
+  const [pairingHint, setPairingHint] = useState<string | null>(null);
 
   const resetState = useCallback(() => {
+    setLocalDataset(null);
     setDataset(null);
+    setRawBraidJson(null);
     setError(null);
     setStreamedRows(0);
     setIsParsing(false);
-  }, []);
+    setManifest(null);
+    setCompleteness(null);
+    setPairingHint(null);
+  }, [setDataset, setRawBraidJson]);
 
   const buildDataset = useCallback(
     (
@@ -70,7 +86,7 @@ export function Day1Upload() {
       });
       const columns = inferColumnTypes(headers, rows);
 
-      setDataset({
+      const parsed: ParsedDataset = {
         fileName: file.name,
         fileSizeMB: file.size / (1024 * 1024),
         format,
@@ -78,11 +94,68 @@ export function Day1Upload() {
         columns,
         rows,
         rawHeaders: headers,
-      });
+      };
+
+      setLocalDataset(parsed);
+      setDataset(parsed);
       setStreamedRows(rows.length);
       setIsParsing(false);
     },
-    []
+    [setDataset]
+  );
+
+  const applyMultiFileResult = useCallback(
+    (result: Awaited<ReturnType<typeof processMultiFileUpload>>, files?: File[]) => {
+      const format: ParsedDataset['format'] =
+        result.fileNames.length > 1 ? 'MultiFile' : 'PCPSP';
+
+      const columns = inferColumnTypes(result.previewHeaders, result.previewRows);
+      const parsed: ParsedDataset = {
+        fileName: result.fileNames.join(' + '),
+        fileSizeMB: result.totalSizeMB,
+        format,
+        rowCount: result.previewRows.length,
+        columns,
+        rows: result.previewRows,
+        rawHeaders: result.previewHeaders,
+      };
+
+      setLocalDataset(parsed);
+      setDataset(parsed);
+      setManifest(result.manifest);
+      setCompleteness(result.completeness);
+      setPairingHint(files ? getSuggestedPairing(files) : null);
+
+      if (result.braidJson) {
+        setRawBraidJson(result.braidJson);
+      }
+      setStreamedRows(result.previewRows.length);
+      setIsParsing(false);
+    },
+    [setDataset, setRawBraidJson]
+  );
+
+  const handleFilesSelected = useCallback(
+    async (files: File[]) => {
+      resetState();
+      setIsParsing(true);
+      setError(null);
+      setPairingHint(getSuggestedPairing(files));
+
+      try {
+        const result = await processMultiFileUpload(files);
+        if (!result.completeness.readyForBraid) {
+          setError(
+            `Could not build complete BRAID input. Missing: ${result.completeness.missing.join(', ')}`
+          );
+        }
+        applyMultiFileResult(result, files);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Multi-file parse failed');
+        setIsParsing(false);
+      }
+    },
+    [resetState, applyMultiFileResult]
   );
 
   const handleFileSelected = useCallback(
@@ -96,6 +169,23 @@ export function Day1Upload() {
       if (ext === '.zip') {
         setError('ZIP archives are not yet supported. Please upload CSV, Excel, or JSON directly.');
         setIsParsing(false);
+        return;
+      }
+
+      if (ext === '.pcpsp' || ext === '.pcps' || ext === '.prec') {
+        processMultiFileUpload([file])
+          .then((result) => {
+            if (!result.completeness.readyForBraid) {
+              setError(
+                `Could not build complete BRAID input. Missing: ${result.completeness.missing.join(', ')}`
+              );
+            }
+            applyMultiFileResult(result, [file]);
+          })
+          .catch((err: Error) => {
+            setError(err.message ?? 'Failed to parse mining model file');
+            setIsParsing(false);
+          });
         return;
       }
 
@@ -124,8 +214,9 @@ export function Day1Upload() {
 
       if (ext === '.json') {
         parseJSON(file)
-          .then(({ rows, headers, isBraidJson }) => {
+          .then(({ rows, headers, isBraidJson, braidJson }) => {
             setStreamedRows(rows.length);
+            if (braidJson) setRawBraidJson(braidJson);
             buildDataset(file, rows, headers, isBraidJson);
           })
           .catch((err: Error) => {
@@ -138,7 +229,7 @@ export function Day1Upload() {
       setError(`Unsupported file type: ${ext}`);
       setIsParsing(false);
     },
-    [buildDataset, resetState]
+    [buildDataset, resetState, setRawBraidJson, applyMultiFileResult]
   );
 
   const showResults = dataset !== null || isParsing;
@@ -150,6 +241,7 @@ export function Day1Upload() {
         subtitle="Upload and inspect large mining datasets — built to handle 1M+ rows without freezing your browser"
         step={1}
       />
+      <StepNav currentStep={1} />
 
       <main className="relative mx-auto max-w-7xl px-6 py-10">
         {/* Subtle dot grid overlay */}
@@ -170,7 +262,10 @@ export function Day1Upload() {
 
           {!showResults ? (
             <div className="mx-auto max-w-2xl">
-              <DropZone onFileSelected={handleFileSelected} />
+              <DropZone
+                onFileSelected={handleFileSelected}
+                onFilesSelected={handleFilesSelected}
+              />
 
               {/* Feature cards */}
               <div className="mt-14 grid gap-5 sm:grid-cols-3">
@@ -194,7 +289,7 @@ export function Day1Upload() {
               <div className="mt-10 flex items-center justify-center gap-6 text-xs text-slate-400">
                 <span className="flex items-center gap-1.5">
                   <Layers className="h-3.5 w-3.5" />
-                  MineLib · BRAID JSON · Generic CSV
+                  MineLib · PCPSP + PREC · Multi-file · BRAID JSON
                 </span>
                 <span className="hidden h-3 w-px bg-slate-200 sm:block" />
                 <span className="hidden sm:block">100% browser-side — no data leaves your machine</span>
@@ -202,6 +297,14 @@ export function Day1Upload() {
             </div>
           ) : (
             <div className="space-y-6">
+              {manifest && completeness && (
+                <MultiFileManifestCard
+                  manifest={manifest}
+                  completeness={completeness}
+                  pairingHint={pairingHint}
+                />
+              )}
+
               <FileMetaCard
                 dataset={dataset}
                 isStreaming={isParsing}
@@ -246,14 +349,22 @@ export function Day1Upload() {
                     </div>
                   </div>
 
-                  <div className="flex justify-center pt-4">
+                  <div className="flex justify-center gap-4 pt-4">
                     <button
                       type="button"
                       onClick={resetState}
                       className="group inline-flex items-center gap-2.5 rounded-xl bg-white px-6 py-3 text-sm font-semibold text-slate-700 shadow-md ring-1 ring-slate-200 transition-all hover:bg-slate-50 hover:shadow-lg hover:ring-violet-300"
                     >
                       <RotateCcw className="h-4 w-4 transition-transform group-hover:-rotate-45" />
-                      Upload a different file
+                      Upload different file{manifest && manifest.length > 1 ? 's' : ''}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigate('/map')}
+                      className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-6 py-3 text-sm font-semibold text-white shadow-md hover:bg-violet-700"
+                    >
+                      {completeness?.readyForBraid ? 'Continue to Validate' : 'Continue to Mapping'}
+                      <ArrowRight className="h-4 w-4" />
                     </button>
                   </div>
                 </>

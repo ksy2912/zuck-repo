@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local datasets and exported outputs (large files)
+dataset/
+output/

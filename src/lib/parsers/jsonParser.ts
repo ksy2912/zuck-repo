@@ -1,27 +1,17 @@
-interface BraidBlock {
-  id: number;
-  precedence?: number[];
-  destinations?: { id: number; objective?: number }[];
-}
+import type { BraidJSON } from '../../types/braid';
 
-interface BraidJsonRoot {
-  blocks?: BraidBlock[];
-  resources?: unknown[];
-  parameters?: unknown;
-}
-
-function isBraidJson(data: unknown): data is BraidJsonRoot {
+function isBraidJson(data: unknown): data is BraidJSON {
   if (typeof data !== 'object' || data === null) return false;
   const obj = data as Record<string, unknown>;
   return 'blocks' in obj && 'resources' in obj && 'parameters' in obj;
 }
 
-function flattenBraidJson(data: BraidJsonRoot): {
+function flattenBraidJson(data: BraidJSON): {
   rows: Record<string, string>[];
   headers: string[];
 } {
   const headers = ['block_id', 'objective', 'precedence', 'destination_id'];
-  const rows = (data.blocks ?? []).map((block) => {
+  const rows = data.blocks.map((block) => {
     const dest = block.destinations?.[0];
     return {
       block_id: String(block.id),
@@ -33,9 +23,20 @@ function flattenBraidJson(data: BraidJsonRoot): {
   return { rows, headers };
 }
 
+export function parseRawBraidJSON(text: string): BraidJSON {
+  const parsed: unknown = JSON.parse(text);
+  if (!isBraidJson(parsed)) throw new Error('Not a valid BRAID JSON file');
+  return parsed;
+}
+
 export async function parseJSON(
   file: File
-): Promise<{ rows: Record<string, string>[]; headers: string[]; isBraidJson: boolean }> {
+): Promise<{
+  rows: Record<string, string>[];
+  headers: string[];
+  isBraidJson: boolean;
+  braidJson?: BraidJSON;
+}> {
   const text = await file.text();
   let parsed: unknown;
 
@@ -47,7 +48,7 @@ export async function parseJSON(
 
   if (isBraidJson(parsed)) {
     const { rows, headers } = flattenBraidJson(parsed);
-    return { rows, headers, isBraidJson: true };
+    return { rows, headers, isBraidJson: true, braidJson: parsed };
   }
 
   if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'object') {

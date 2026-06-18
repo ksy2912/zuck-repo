@@ -3,6 +3,8 @@ export type DetectedFormat =
   | 'MineLib'
   | 'Generic_CSV'
   | 'Excel'
+  | 'PCPSP'
+  | 'MultiFile'
   | 'Unknown';
 
 export type ColumnType = 'integer' | 'float' | 'string' | 'boolean';

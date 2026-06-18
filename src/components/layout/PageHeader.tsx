@@ -10,7 +10,6 @@ interface PageHeaderProps {
 export function PageHeader({ title, subtitle, step = 1, totalSteps = 4 }: PageHeaderProps) {
   return (
     <header className="relative overflow-hidden bg-slate-950 text-white">
-      {/* Decorative background */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -left-24 -top-24 h-64 w-64 rounded-full bg-violet-600/20 blur-3xl" />
         <div className="absolute -right-16 top-0 h-48 w-48 rounded-full bg-cyan-500/15 blur-3xl" />
@@ -24,7 +23,6 @@ export function PageHeader({ title, subtitle, step = 1, totalSteps = 4 }: PageHe
         />
       </div>
 
-      {/* Top bar */}
       <div className="relative mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-700 shadow-lg shadow-violet-900/40">
@@ -34,7 +32,7 @@ export function PageHeader({ title, subtitle, step = 1, totalSteps = 4 }: PageHe
             <div className="flex items-baseline gap-2">
               <span className="text-xl font-extrabold tracking-tight text-white">BRAID</span>
               <span className="hidden rounded-full bg-violet-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-violet-300 sm:inline">
-                v1.0
+                Decisions 360
               </span>
             </div>
             <p className="text-xs text-slate-400">Mine Optimization Platform</p>
@@ -56,13 +54,13 @@ export function PageHeader({ title, subtitle, step = 1, totalSteps = 4 }: PageHe
               />
             ))}
           </div>
-          <span className="text-sm font-medium text-slate-400">
-            Decisions <span className="text-slate-300">360</span>
-          </span>
+          <div className="hidden text-right sm:block">
+            <p className="text-xs font-medium text-slate-300">DECISIONS 360 Pty Ltd</p>
+            <p className="text-[10px] text-slate-500">ABN 53 667 344 014</p>
+          </div>
         </div>
       </div>
 
-      {/* Title section */}
       <div className="relative border-t border-white/5">
         <div className="mx-auto max-w-7xl px-6 py-8">
           <div className="flex items-center gap-3">
