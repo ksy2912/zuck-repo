@@ -3,19 +3,17 @@ import { Check } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
 
 interface StepNavProps {
-  currentStep: 1 | 2 | 3 | 4;
+  currentStep: 1 | 2;
 }
 
 const STEPS = [
   { num: 1, label: 'Upload', path: '/' },
-  { num: 2, label: 'Map & Validate', path: '/map' },
-  { num: 3, label: 'Optimize', path: '/optimize' },
-  { num: 4, label: 'Results', path: '/results' },
+  { num: 2, label: 'Results', path: '/results' },
 ] as const;
 
 export function StepNav({ currentStep }: StepNavProps) {
   const navigate = useNavigate();
-  const { braidOutput } = useAppContext();
+  const { solverResult } = useAppContext();
 
   return (
     <nav className="border-b border-slate-200 bg-white/80 backdrop-blur-sm">
@@ -23,8 +21,8 @@ export function StepNav({ currentStep }: StepNavProps) {
         {STEPS.map((step, i) => {
           const isComplete = step.num < currentStep;
           const isCurrent = step.num === currentStep;
-          const isLocked = step.num === 4 && !braidOutput;
-          const isClickable = step.num <= 3 || !!braidOutput;
+          const isLocked = step.num === 2 && !solverResult;
+          const isClickable = step.num === 1 || !!solverResult;
 
           return (
             <div key={step.num} className="flex items-center">

@@ -1,15 +1,15 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
-import { Day1Upload } from './pages/Day1Upload';
-import { Day2Mapping } from './pages/Day2Mapping';
+import { UploadPage } from './pages/UploadPage';
+import { ResultsPage } from './pages/ResultsPage';
 
 function App() {
   return (
     <AppProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Day1Upload />} />
-          <Route path="/map" element={<Day2Mapping />} />
+          <Route path="/" element={<UploadPage />} />
+          <Route path="/results" element={<ResultsPage />} />
         </Routes>
       </BrowserRouter>
     </AppProvider>
