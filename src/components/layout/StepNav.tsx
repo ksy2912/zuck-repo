@@ -7,8 +7,8 @@ interface StepNavProps {
 }
 
 const STEPS = [
-  { num: 1, label: 'Upload', path: '/' },
-  { num: 2, label: 'Results', path: '/results' },
+  { num: 1, label: 'Upload dataset', path: '/' },
+  { num: 2, label: 'Review results', path: '/results' },
 ] as const;
 
 export function StepNav({ currentStep }: StepNavProps) {
@@ -16,8 +16,8 @@ export function StepNav({ currentStep }: StepNavProps) {
   const { solverResult } = useAppContext();
 
   return (
-    <nav className="border-b border-slate-200 bg-white/80 backdrop-blur-sm">
-      <div className="mx-auto flex max-w-7xl items-center justify-center gap-0 px-6 py-4">
+    <nav className="border-b border-[var(--border)] bg-white">
+      <div className="mx-auto flex max-w-7xl items-center justify-center gap-2 px-6 py-3">
         {STEPS.map((step, i) => {
           const isComplete = step.num < currentStep;
           const isCurrent = step.num === currentStep;
@@ -30,35 +30,31 @@ export function StepNav({ currentStep }: StepNavProps) {
                 type="button"
                 disabled={!isClickable || isCurrent}
                 onClick={() => isClickable && navigate(step.path)}
-                className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+                className={`flex items-center gap-2.5 rounded-lg px-4 py-2 text-sm transition-colors ${
                   isCurrent
-                    ? 'bg-violet-100 text-violet-700'
+                    ? 'bg-[var(--navy)] text-white'
                     : isComplete
-                      ? 'text-slate-700 hover:bg-slate-100'
+                      ? 'text-[var(--text-primary)] hover:bg-slate-50'
                       : isLocked
                         ? 'cursor-not-allowed text-slate-300'
-                        : 'text-slate-500 hover:bg-slate-50'
+                        : 'text-[var(--text-muted)] hover:bg-slate-50'
                 }`}
               >
                 <span
-                  className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
+                  className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
                     isCurrent
-                      ? 'bg-violet-600 text-white'
+                      ? 'bg-white/20 text-white'
                       : isComplete
-                        ? 'bg-slate-800 text-white'
-                        : 'border-2 border-slate-300 text-slate-400'
+                        ? 'bg-[var(--green)] text-white'
+                        : 'border border-slate-300 text-slate-400'
                   }`}
                 >
                   {isComplete ? <Check className="h-3.5 w-3.5" /> : step.num}
                 </span>
-                <span className={isCurrent ? 'font-bold' : ''}>{step.label}</span>
+                <span className={isCurrent ? 'font-semibold' : 'font-medium'}>{step.label}</span>
               </button>
               {i < STEPS.length - 1 && (
-                <div
-                  className={`mx-2 h-px w-8 sm:w-16 ${
-                    step.num < currentStep ? 'bg-violet-400' : 'bg-slate-200'
-                  }`}
-                />
+                <div className={`mx-3 h-px w-12 ${step.num < currentStep ? 'bg-[var(--copper)]' : 'bg-slate-200'}`} />
               )}
             </div>
           );

@@ -17,4 +17,5 @@ export interface SolverResult {
   periodStats: PeriodStat[];
   destinationSplit: { ore: number; waste: number };
   fileNames: { pcpsp: string; prec: string };
+  engine: string;
 }

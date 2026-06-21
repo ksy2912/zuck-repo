@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Download, Copy, Check } from 'lucide-react';
+import { Download, Copy, Check, Braces } from 'lucide-react';
 import type { BraidOutput } from '../../types/braid';
 
 interface OutputJsonPanelProps {
@@ -28,19 +28,24 @@ export function OutputJsonPanel({ output, fileName = 'schedule_output.json' }: O
   };
 
   return (
-    <div className="glass-card rounded-2xl p-6">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h3 className="text-sm font-bold text-slate-800">Schedule output JSON</h3>
-          <p className="text-xs text-slate-400">
-            BRAID format — {output.length.toLocaleString()} scheduled blocks
-          </p>
+    <div className="panel overflow-hidden">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] px-5 py-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--navy)] text-white">
+            <Braces className="h-4 w-4" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-[var(--text-primary)]">Schedule output JSON</h3>
+            <p className="text-xs text-[var(--text-muted)]">
+              BRAID format · {output.length.toLocaleString()} scheduled blocks
+            </p>
+          </div>
         </div>
         <div className="flex gap-2">
           <button
             type="button"
             onClick={copy}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            className="btn-secondary inline-flex items-center gap-1.5 px-3 py-1.5 text-xs"
           >
             {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
             {copied ? 'Copied' : 'Copy'}
@@ -48,14 +53,14 @@ export function OutputJsonPanel({ output, fileName = 'schedule_output.json' }: O
           <button
             type="button"
             onClick={download}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-700"
+            className="btn-primary inline-flex items-center gap-1.5 px-3 py-1.5 text-xs"
           >
             <Download className="h-3.5 w-3.5" />
             Download
           </button>
         </div>
       </div>
-      <pre className="max-h-80 overflow-auto rounded-xl bg-slate-900 p-4 text-xs leading-relaxed text-emerald-300">
+      <pre className="custom-scroll max-h-80 overflow-auto bg-[#0a1628] p-5 font-mono text-xs leading-relaxed text-slate-300">
         {json.slice(0, 8000)}
         {json.length > 8000 && '\n… (truncated preview — download for full file)'}
       </pre>

@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { Upload, FileSpreadsheet } from 'lucide-react';
+import { Upload, FileText } from 'lucide-react';
 
 interface DropZoneProps {
   onPairSelected: (pcpsp: File, prec: File) => void;
@@ -31,7 +31,7 @@ export function DropZone({ onPairSelected, isProcessing }: DropZoneProps) {
       const { pcpsp, prec } = classify(files);
 
       if (!pcpsp || !prec) {
-        setError('Upload exactly one .pcpsp and one .prec file together.');
+        setError('Select one .pcpsp model file and one .prec precedence file.');
         if (pcpsp) setPcpspFile(pcpsp);
         if (prec) setPrecFile(prec);
         return;
@@ -45,10 +45,7 @@ export function DropZone({ onPairSelected, isProcessing }: DropZoneProps) {
   );
 
   return (
-    <div className="relative animate-fade-up">
-      <div className="glow-orb -left-8 -top-8 h-40 w-40 bg-violet-400/30" />
-      <div className="glow-orb -bottom-8 -right-8 h-32 w-32 bg-cyan-400/20" />
-
+    <div className="animate-fade-up">
       <div
         role="button"
         tabIndex={0}
@@ -61,9 +58,9 @@ export function DropZone({ onPairSelected, isProcessing }: DropZoneProps) {
         }}
         onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
         onDragLeave={() => setIsDragOver(false)}
-        className={`gradient-border relative flex min-h-[260px] w-full cursor-pointer flex-col items-center justify-center rounded-2xl p-10 transition-all duration-300 ${
-          isDragOver ? 'drag-active scale-[1.01] shadow-xl shadow-violet-200/50' : 'shadow-lg shadow-slate-200/60'
-        } ${isProcessing ? 'pointer-events-none opacity-70' : ''}`}
+        className={`panel-elevated flex min-h-[220px] w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 transition-colors ${
+          isDragOver ? 'border-[var(--copper)] bg-amber-50/30' : 'border-slate-200 hover:border-slate-300'
+        } ${isProcessing ? 'pointer-events-none opacity-60' : ''}`}
       >
         <input
           ref={inputRef}
@@ -77,39 +74,35 @@ export function DropZone({ onPairSelected, isProcessing }: DropZoneProps) {
           }}
         />
 
-        <div className="animate-float mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-purple-700 shadow-xl shadow-violet-300/50">
-          <Upload className="h-8 w-8 text-white" strokeWidth={2} />
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--navy)] text-white">
+          <Upload className="h-5 w-5" />
         </div>
 
-        <p className="text-center text-xl font-bold text-slate-800">
-          Drop your .pcpsp + .prec files here
+        <p className="text-base font-semibold text-[var(--text-primary)]">
+          Upload model and precedence files
         </p>
-        <p className="mt-2 max-w-md text-center text-sm text-slate-500">
-          Both files required — optimization runs automatically after upload
+        <p className="mt-1 text-sm text-[var(--text-muted)]">
+          Drop both files here or click to browse
         </p>
 
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-500/10 px-3.5 py-1.5 text-xs font-semibold text-violet-600 ring-1 ring-violet-500/20 ring-inset">
-            <FileSpreadsheet className="h-3.5 w-3.5" />
-            .pcpsp model
+        <div className="mt-5 flex items-center gap-3 text-xs text-[var(--text-muted)]">
+          <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2.5 py-1 font-medium">
+            <FileText className="h-3.5 w-3.5" /> .pcpsp
           </span>
-          <span className="text-slate-300">+</span>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-cyan-500/10 px-3.5 py-1.5 text-xs font-semibold text-cyan-600 ring-1 ring-cyan-500/20 ring-inset">
-            <FileSpreadsheet className="h-3.5 w-3.5" />
-            .prec precedence
+          <span>+</span>
+          <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2.5 py-1 font-medium">
+            <FileText className="h-3.5 w-3.5" /> .prec
           </span>
         </div>
 
         {(pcpspFile || precFile) && (
-          <div className="mt-5 space-y-1 text-center text-xs text-slate-500">
-            {pcpspFile && <p className="font-mono text-violet-600">{pcpspFile.name}</p>}
-            {precFile && <p className="font-mono text-cyan-600">{precFile.name}</p>}
+          <div className="mt-4 space-y-1 text-center font-mono text-xs text-[var(--text-muted)]">
+            {pcpspFile && <p>{pcpspFile.name}</p>}
+            {precFile && <p>{precFile.name}</p>}
           </div>
         )}
 
-        {error && (
-          <p className="mt-4 text-sm font-medium text-red-600">{error}</p>
-        )}
+        {error && <p className="mt-3 text-sm font-medium text-red-600">{error}</p>}
       </div>
     </div>
   );
