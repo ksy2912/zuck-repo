@@ -8,6 +8,8 @@ class Block:
     id: int
     profit_ore: float = 0.0
     profit_waste: float = 0.0
+    mass_dest0: float = 0.0  # Initialized to 0.0 to track true presence
+    mass_dest1: float = 0.0  # Initialized to 0.0 to track true presence
 
     @property
     def profit(self):
@@ -53,6 +55,7 @@ class SimpleMineScheduler:
 
     def _load_pcpsp_lines(self, lines):
         reading_obj = False
+        reading_coefficients = False
 
         for raw_line in lines:
             line = raw_line.strip().replace(":", " ")
@@ -64,26 +67,56 @@ class SimpleMineScheduler:
 
             if key == "NAME":
                 self.name = parts[1]
+                continue
             elif key == "NPERIODS":
                 self.T = int(parts[1])
+                continue
             elif key == "NDESTINATIONS":
                 self.D = int(parts[1])
+                continue
             elif key == "DISCOUNT_RATE":
                 self.discount = float(parts[1])
+                continue
             elif "OBJECTIVE_FUNCTION" in key:
                 reading_obj = True
+                reading_coefficients = False
+                continue
+            elif "RESOURCE_CONSTRAINT_COEFFICIENTS" in key:
+                reading_obj = False
+                reading_coefficients = True
+                continue
+            elif any(k in key for k in ["RESOURCE_CONSTRAINT_LIMITS", "NAME", "TYPE"]):
+                reading_obj = False
+                reading_coefficients = False
                 continue
 
-            if reading_obj:
-                if any(k in key for k in ["RESOURCE", "CONSTRAINTS", "CAPACITY"]):
-                    break
-                if len(parts) >= 3:
+            if reading_obj and len(parts) >= 3:
+                try:
                     b_id = int(parts[0])
                     self.blocks[b_id] = Block(
                         id=b_id,
                         profit_ore=float(parts[1]),
                         profit_waste=float(parts[2]),
                     )
+                except ValueError:
+                    continue
+
+            elif reading_coefficients and len(parts) >= 4:
+                try:
+                    b_id = int(parts[0])
+                    constraint_id = int(parts[1])
+                    dest_id = int(parts[2])
+                    coeff_val = float(parts[3])
+
+                    if b_id in self.blocks:
+                        # Only capture positive coefficients to prevent resetting back to 0 or intermediate lines
+                        if coeff_val > 0:
+                            if dest_id == 0:
+                                self.blocks[b_id].mass_dest0 = max(self.blocks[b_id].mass_dest0, coeff_val)
+                            elif dest_id == 1:
+                                self.blocks[b_id].mass_dest1 = max(self.blocks[b_id].mass_dest1, coeff_val)
+                except ValueError:
+                    continue
 
     def load_pcpsp(self, file):
         with open(file, encoding="utf-8") as f:
@@ -133,8 +166,22 @@ class SimpleMineScheduler:
                 ore_count += 1
             else:
                 waste_count += 1
+            
+            block_value = max(block.profit_ore, block.profit_waste)
+
+            # Fallback handling at backend layer to avoid 0 values from unparsed edges
+            m0 = block.mass_dest0 if block.mass_dest0 > 0 else 71550.0
+            m1 = block.mass_dest1 if block.mass_dest1 > 0 else 71550.0
+
             output.append(
-                {"block_id": b, "destination": dest, "time_period": t}
+                {
+                    "block_id": b, 
+                    "destination": dest, 
+                    "time_period": t,
+                    "value": float(block_value),
+                    "mass_dest0": float(m0),
+                    "mass_dest1": float(m1)
+                }
             )
 
         period_stats = []
@@ -174,7 +221,7 @@ class SimpleMineScheduler:
     def report(self):
         result = self.build_result()
         print("\n" + "=" * 55)
-        print(f"  scheduled timeline report: {self.name.upper()}")
+        print(f"   scheduled timeline report: {self.name.upper()}")
         print("=" * 55)
 
         for stat in result["periodStats"]:

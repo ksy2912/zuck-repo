@@ -19,16 +19,13 @@ export function buildPeriodRows(result: SolverResult): PeriodRow[] {
   for (const row of result.output) {
     const bucket = destByPeriod.get(row.time_period) ?? { ore: 0, waste: 0 };
     
-    // -------------------------------------------------------------
-    // FIXED MAPPING: Destination 0 is Waste, Destination 1 is Ore
-    // -------------------------------------------------------------
-    if (row.destination === 0) {
-      bucket.waste += 1; // Destination 0 goes to Waste counter
-    } else {
-      bucket.ore += 1;   // Destination 1 goes to Ore counter
-    }
-    // -------------------------------------------------------------
     
+    if (row.destination === 0) {
+      bucket.waste += 1; 
+    } else {
+      bucket.ore += 1;   
+    }
+   
     destByPeriod.set(row.time_period, bucket);
   }
 
@@ -67,7 +64,7 @@ export function summaryInsights(rows: PeriodRow[], result: SolverResult) {
   const peak = rows.reduce((a, b) => (b.blocks > a.blocks ? b : a), rows[0]);
   const topNpv = rows.reduce((a, b) => (b.npv > a.npv ? b : a), rows[0]);
   
-  // Calculate total ore across all rows for global tracking
+  // total ore across all rows 
   const totalOre = rows.reduce((sum, row) => sum + row.ore, 0);
   
   const orePct = result.blockCount

@@ -17,7 +17,7 @@ export function StepNav({ currentStep }: StepNavProps) {
 
   return (
     <nav className="border-b border-[var(--border)] bg-white">
-      <div className="mx-auto flex max-w-7xl items-center justify-center gap-2 px-6 py-3">
+      <div className="page-shell flex items-center justify-center gap-2 py-3">
         {STEPS.map((step, i) => {
           const isComplete = step.num < currentStep;
           const isCurrent = step.num === currentStep;

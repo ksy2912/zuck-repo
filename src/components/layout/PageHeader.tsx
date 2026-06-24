@@ -8,7 +8,7 @@ interface PageHeaderProps {
 export function PageHeader({ title, subtitle, step = 1, totalSteps = 2 }: PageHeaderProps) {
   return (
     <header className="border-b border-[#0a1f35] bg-[var(--navy)] text-white">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+      <div className="page-shell flex items-center justify-between py-4">
         <div className="flex items-center gap-4">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--copper)] text-sm font-bold tracking-tight text-white">
             B
@@ -25,7 +25,7 @@ export function PageHeader({ title, subtitle, step = 1, totalSteps = 2 }: PageHe
       </div>
 
       <div className="border-t border-white/10 bg-[var(--navy-mid)]">
-        <div className="mx-auto max-w-7xl px-6 py-7">
+        <div className="page-shell py-7">
           <p className="text-[11px] font-medium uppercase tracking-widest text-[var(--copper-light)]">
             Step {step} of {totalSteps}
           </p>
@@ -33,7 +33,7 @@ export function PageHeader({ title, subtitle, step = 1, totalSteps = 2 }: PageHe
             {title}
           </h1>
           {subtitle && (
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-400">{subtitle}</p>
+            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-400">{subtitle}</p>
           )}
         </div>
       </div>

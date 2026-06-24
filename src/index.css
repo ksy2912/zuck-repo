@@ -18,12 +18,25 @@
   --text-muted: #64748b;
 }
 
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+}
+
 body {
   margin: 0;
   font-family: var(--font-sans);
   background: var(--surface);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
+}
+
+.page-shell {
+  width: 100%;
+  max-width: none;
+  padding-inline: clamp(1rem, 3vw, 2.5rem);
 }
 
 .bg-app {

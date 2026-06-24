@@ -6,6 +6,32 @@ import { StepNav } from '../components/layout/StepNav';
 import { DropZone } from '../components/upload/DropZone';
 import { useAppContext } from '../context/AppContext';
 import { checkBackendHealth, solveWithBackend } from '../lib/api/solveApi';
+import type { BlockCoordinate } from '../types/solver';
+
+// Clean parser returning the spatial layout matrix
+function parseBlocksFile(fileText: string): Record<number, BlockCoordinate> {
+  const coordinatesMap: Record<number, BlockCoordinate> = {};
+  const lines = fileText.split(/\r?\n/);
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line || line.startsWith('#')) continue;
+
+    const columns = line.split(/\s+/);
+
+    if (columns.length >= 4) {
+      const id = parseInt(columns[0], 10);
+      const x = parseFloat(columns[1]);
+      const y = parseFloat(columns[2]);
+      const z = parseFloat(columns[3]);
+
+      if (!isNaN(id) && !isNaN(x) && !isNaN(y) && !isNaN(z)) {
+        coordinatesMap[id] = { id, x, y, z };
+      }
+    }
+  }
+  return coordinatesMap;
+}
 
 export function UploadPage() {
   const navigate = useNavigate();
@@ -19,7 +45,7 @@ export function UploadPage() {
   }, []);
 
   const handlePairSelected = useCallback(
-    async (pcpsp: File, prec: File) => {
+    async (pcpsp: File, prec: File, coordsFile?: File) => {
       if (!backendReady) {
         setError('Python backend is not running. Start it with: npm run dev:backend');
         return;
@@ -27,10 +53,34 @@ export function UploadPage() {
 
       setError(null);
       setIsProcessing(true);
+      
       try {
         const result = await solveWithBackend(pcpsp, prec);
-        setSolverResult(result);
-        navigate('/results');
+
+        if (coordsFile) {
+          const reader = new FileReader();
+
+          reader.onload = (event) => {
+            const rawText = event.target?.result as string;
+            const coordinatesMap = parseBlocksFile(rawText);
+
+            setSolverResult({
+              ...result,
+              coordinates: coordinatesMap,
+            });
+            navigate('/results');
+          };
+
+          reader.onerror = () => {
+            setError('Failed reading .blocks column mappings.');
+            setIsProcessing(false);
+          };
+
+          reader.readAsText(coordsFile);
+        } else {
+          setSolverResult(result);
+          navigate('/results');
+        }
       } catch (err) {
         setError(
           err instanceof Error
@@ -53,7 +103,7 @@ export function UploadPage() {
       />
       <StepNav currentStep={1} />
 
-      <main className="mx-auto max-w-3xl px-6 py-10">
+      <main className="page-shell w-full py-10">
         <div className="space-y-6">
           {backendReady === false && (
             <div className="panel flex items-start gap-3 border-amber-200 bg-amber-50/50 p-5">
@@ -67,14 +117,6 @@ export function UploadPage() {
               </div>
             </div>
           )}
-
-          {backendReady === true && (
-            <div className="flex items-center gap-2 rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-800 ring-1 ring-emerald-200">
-              <Server className="h-4 w-4" />
-              Python backend connected
-            </div>
-          )}
-
           {error && (
             <div className="panel flex items-start gap-3 border-red-200 bg-red-50/50 p-5">
               <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
@@ -97,7 +139,7 @@ export function UploadPage() {
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="panel p-4">
               <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]">Input</p>
-              <p className="mt-1 text-sm font-semibold">.pcpsp + .prec</p>
+              <p className="mt-1 text-sm font-semibold">.pcpsp + .prec + (opt) .blocks</p>
             </div>
             <div className="panel p-4">
               <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]">Engine</p>
